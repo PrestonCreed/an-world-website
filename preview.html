@@ -1,0 +1,161 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AN — Streaming Layout Preview</title>
+<style>
+@font-face{font-family:'Suisse Intl';src:url('./public/fonts/SuisseIntl-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Suisse Intl';src:url('./public/fonts/SuisseIntl-Medium.ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Suisse Intl';src:url('./public/fonts/SuisseIntl-Bold.otf') format('opentype');font-weight:800;font-style:normal;font-display:swap}
+:root{--an-bg:#000;--an-fg:#fff;--an-blue-light:#0f7edd;--an-blue-mid:#073991;--an-blue-dark:#021647}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--an-bg);color:var(--an-fg);font-family:'Suisse Intl',system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(40% 30% at 50% 10%,rgba(15,126,221,.10),transparent 60%);pointer-events:none}
+body::after{content:"";position:fixed;inset:0;z-index:-1;background-image:url("./public/images/blue-mist.png");background-repeat:no-repeat;background-position:center -120px;background-size:1100px auto;opacity:.16;pointer-events:none}
+.container{max-width:1440px;margin:0 auto;padding:0 24px}
+.header{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,.6));backdrop-filter:blur(6px);border-bottom:1px solid rgba(255,255,255,.06)}
+.nav{height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav a{color:rgba(255,255,255,.85);margin:0 14px;text-decoration:none;font-size:14px}
+.brand{font-weight:900;font-size:24px;letter-spacing:-.02em;color:#fff;text-decoration:none}
+.pill-outline{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:6px 12px}
+.hero{padding:24px 0 8px}
+.carousel{position:relative}.slides{display:grid;grid-auto-flow:column;gap:12px;overflow:hidden}
+.navBtns{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.navBtns button{pointer-events:auto;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.4);width:36px;height:36px;border-radius:999px;color:#fff}
+.dots{display:flex;gap:6px;position:absolute;left:50%;transform:translateX(-50%);bottom:10px}
+.dot{width:8px;height:8px;border-radius:999px;background:rgba(255,255,255,.3)}.dot.active{background:#fff}
+.heroCard{border-radius:12px;border:1px solid rgba(255,255,255,.12);overflow:hidden}
+.heroBox{height:280px;background:linear-gradient(120deg,rgba(15,126,221,.25),rgba(2,22,71,.25)),rgba(255,255,255,.04)}
+.toggle{display:inline-flex;border:1px solid rgba(255,255,255,.15);border-radius:999px;overflow:hidden}
+.toggle button{padding:8px 12px;background:transparent;color:#fff;border:0}
+.toggle button.active{background:rgba(255,255,255,.1)}
+.rail{display:grid;grid-auto-flow:column;grid-auto-columns:max(22ch,240px);gap:16px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x proximity}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;scroll-snap-align:start}
+.thumb{aspect-ratio:16/9;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}
+.card h4{font-weight:600;margin:10px 12px 2px;font-size:14px}
+.card p{opacity:.7;margin:0 12px 12px;font-size:12px}
+.fade{mask-image:linear-gradient(to right,transparent,#000 40%,#000 60%,transparent)}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:60}
+.modal.show{display:grid}
+footer{border-top:1px solid rgba(255,255,255,.1);margin-top:64px}.foot{padding:48px 0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px}
+.foot h4{margin:0 0 8px;opacity:.6;font-weight:600;font-size:14px}.foot a{color:rgba(255,255,255,.85);text-decoration:none;display:block;margin:4px 0;font-size:14px}.foot small{color:rgba(255,255,255,.5);display:block;margin-top:24px}
+@media (max-width:768px){.foot{grid-template-columns:1fr}.heroBox{height:240px}}
+</style></head>
+<body>
+<header class="header"><div class="container nav">
+  <a class="brand" href="#">AN</a>
+  <nav><a href="#">Home</a><a href="#">Learn More</a><a href="#" class="pill-outline">Creator Program</a><a href="#">Blog</a><a href="#">Contact</a></nav>
+  <div><a href="#" style="opacity:.8;font-size:14px;margin-right:10px;">Search</a>
+       <a href="#" style="border:1px solid rgba(255,255,255,.2);padding:8px 12px;border-radius:999px;font-size:14px;color:#fff;text-decoration:none;">Sign Up</a></div>
+</div></header>
+<main>
+  <section class="container hero">
+    <div class="carousel" id="hero">
+      <div class="slides">
+        <div class="heroCard"><div class="heroBox"></div></div>
+        <div class="heroCard"><div class="heroBox"></div></div>
+        <div class="heroCard"><div class="heroBox"></div></div>
+        <div class="heroCard"><div class="heroBox"></div></div>
+        <div class="heroCard"><div class="heroBox"></div></div>
+      </div>
+      <div class="navBtns"><button data-prev>‹</button><button data-next>›</button></div>
+      <div class="dots"></div>
+    </div>
+  </section>
+  <section class="container" style="padding-top:18px;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="text-sm" style="opacity:.8">Streaming Layout:</div>
+      <div class="toggle" id="mode">
+        <button class="active" data-mode="A">Version A</button><button data-mode="B">Version B</button>
+      </div>
+    </div>
+  </section>
+  <section class="container" id="rails">
+    <div style="margin:24px 0 6px;display:flex;align-items:end;justify-content:space-between"><h3 style="font-size:18px;font-weight:600">Latest Releases</h3><a href="#" style="opacity:.7">See all</a></div>
+    <div class="rail fade">
+      <div class="card"><div class="thumb"></div><h4>Latest — Title 1</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>Latest — Title 2</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>Latest — Title 3</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>Latest — Title 4</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>Latest — Title 5</h4><p>Subtitle goes here</p></div>
+    </div>
+    <div style="margin:24px 0 6px;display:flex;align-items:end;justify-content:space-between"><h3 style="font-size:18px;font-weight:600">All Releases</h3><a href="#" style="opacity:.7">See all</a></div>
+    <div class="rail fade">
+      <div class="card"><div class="thumb"></div><h4>All — Title 1</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>All — Title 2</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>All — Title 3</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>All — Title 4</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>All — Title 5</h4><p>Subtitle goes here</p></div>
+    </div>
+    <div style="margin:24px 0 6px;display:flex;align-items:end;justify-content:space-between"><h3 style="font-size:18px;font-weight:600">Coming Soon</h3><a href="#" style="opacity:.7">See all</a></div>
+    <div class="rail fade">
+      <div class="card"><div class="thumb"></div><h4>Coming — Title 1</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>Coming — Title 2</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>Coming — Title 3</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>Coming — Title 4</h4><p>Subtitle goes here</p></div>
+      <div class="card"><div class="thumb"></div><h4>Coming — Title 5</h4><p>Subtitle goes here</p></div>
+    </div>
+  </section>
+  <section class="container" id="slideshow" style="display:none">
+    <div class="carousel" id="latest">
+      <div class="slides">
+        <!-- 10 slides -->
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 1</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 2</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 3</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 4</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 5</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 6</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 7</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 8</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 9</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+        <div class="heroCard"><div class="heroBox"></div><div style="padding:14px"><div style="font-weight:600">Latest Slide 10</div><div style="opacity:.7;font-size:14px">Subtitle text</div></div></div>
+      </div>
+      <div class="navBtns"><button data-prev>‹</button><button data-next>›</button></div>
+      <div class="dots"></div>
+    </div>
+  </section>
+  <section class="container" style="text-align:center;padding:80px 0">
+    <h2 style="font-size:30px;font-weight:800;margin:0 0 8px">Welcome to Anything World</h2>
+    <p style="max-width:720px;margin:0 auto;opacity:.8">A next-generation entertainment brand and creator ecosystem. This is a centered section placed below the streaming area as requested.</p>
+    <div style="margin-top:16px"><a href="#" class="pill-outline" style="text-decoration:none;color:#fff;padding:10px 16px;display:inline-block">Creator Program</a></div>
+  </section>
+</main>
+<footer><div class="container foot">
+  <div><div class="brand">AN</div><p style="font-size:14px;color:rgba(255,255,255,.7);max-width:360px;">We invite audiences and creators into worlds that evolve with them.</p></div>
+  <div><h4>Company</h4><a href="#">Learn More</a><a href="#">Brand Values</a><a href="#">Careers</a></div>
+  <div><h4>Explore</h4><a href="#">AN Universe</a><a href="#">Blog</a><a href="#">Get Involved</a><small>© 2025 Anything World. All rights reserved.</small></div>
+</div></footer>
+<div class="modal" id="welcome">
+  <div style="max-width:560px;width:100%;margin:0 16px;background:rgba(0,0,0,.9);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:20px;position:relative">
+    <button id="closeWelcome" style="position:absolute;right:12px;top:10px;opacity:.7;background:transparent;border:0;color:#fff;font-size:18px">✕</button>
+    <h3 style="margin:0 0 8px;font-size:20px;font-weight:700">Welcome to Anything World</h3>
+    <p style="margin:0;opacity:.85">We’re building a next-generation entertainment brand and creator ecosystem. Explore our worlds, follow the journey, and get involved.</p>
+    <div style="margin-top:14px;display:flex;gap:10px">
+      <a href="#" style="border:1px solid rgba(255,255,255,.2);padding:10px 14px;border-radius:999px;color:#fff;text-decoration:none">Learn More</a>
+      <a href="#" style="background:#0f7edd;color:#000;padding:10px 14px;border-radius:999px;text-decoration:none;font-weight:700">Get Involved</a>
+    </div>
+  </div>
+</div>
+<script>
+function setupCarousel(scopeId){
+  const scope=document.getElementById(scopeId); if(!scope) return;
+  const slides=scope.querySelectorAll('.slides > *'); const dotsWrap=scope.querySelector('.dots'); let idx=0;
+  slides.forEach((_,i)=>{ const d=document.createElement('div'); d.className='dot'+(i===0?' active':''); d.addEventListener('click',()=>go(i)); dotsWrap.appendChild(d); });
+  function render(){ slides.forEach((el,i)=>{ el.style.display=(i===idx)?'block':'none'; }); dotsWrap.querySelectorAll('.dot').forEach((d,i)=>{ d.classList.toggle('active', i===idx); }); }
+  function go(i){ idx=(i+slides.length)%slides.length; render(); }
+  scope.querySelector('[data-prev]')?.addEventListener('click',()=>go(idx-1));
+  scope.querySelector('[data-next]')?.addEventListener('click',()=>go(idx+1));
+  render();
+}
+setupCarousel('hero'); setupCarousel('latest');
+const modeEl=document.getElementById('mode'); const rails=document.getElementById('rails'); const slideshow=document.getElementById('slideshow');
+modeEl.addEventListener('click',(e)=>{ if(e.target.tagName!=='BUTTON') return; modeEl.querySelectorAll('button').forEach(b=>b.classList.remove('active')); e.target.classList.add('active');
+  if(e.target.dataset.mode==='A'){ rails.style.display='block'; slideshow.style.display='none'; } else { rails.style.display='none'; slideshow.style.display='block'; } });
+(function(){
+  const key='an_welcome_seen'; if(localStorage.getItem(key)) return;
+  let startedByScroll=false; let timer=setTimeout(()=>{ if(!startedByScroll) document.getElementById('welcome').classList.add('show'); },15000);
+  window.addEventListener('scroll',()=>{ if(!startedByScroll){ startedByScroll=true; setTimeout(()=>document.getElementById('welcome').classList.add('show'),15000); } }, { once:true, passive:true });
+  document.addEventListener('click',(e)=>{ if((e.target.closest && e.target.closest('[data-content-click]')) && timer){ clearTimeout(timer); timer=null; } }, true);
+  document.getElementById('closeWelcome').addEventListener('click', ()=>{ localStorage.setItem(key,'1'); document.getElementById('welcome').classList.remove('show'); });
+})();
+</script>
+</body></html>
