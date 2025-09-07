@@ -3,12 +3,11 @@
 
 /**
  * Sign in / Sign up
- * - Matches site font & tokens (Suisse Intl via tailwind font-sans)
- * - Inputs are white with black text (fixes white-on-white issue)
- * - Single, clean card layout
- * - Google sign-in button (NextAuth provider) with Google "G" mark
- * - Magic link flow explained and wired to NextAuth Email provider
- * - Buttons and borders use the same rounding & border alpha as the site header
+ * - Inputs allow copy/paste (no paste-blocking handlers)
+ * - Password fields include a reveal (eye) toggle
+ * - Matches site font/tokens; unified clean card layout
+ * - Google sign-in button via NextAuth
+ * - Magic link (passwordless) flow with explanation
  */
 
 import { useState } from "react";
@@ -23,17 +22,11 @@ export default function SignInPage() {
   const router = useRouter();
   const returnTo = params.get("returnTo") || "/";
 
-  // Default to “signin” since this is a sign-in page
   const [mode, setMode] = useState<Mode>("signin");
-
-  // Read NextAuth error (if provider redirects back with an error)
   const nextAuthError = params.get("error");
 
   return (
-    <main
-      className="font-sans text-an-fg"
-      // Section uses the site background; center the card
-    >
+    <main className="font-sans text-an-fg">
       <section className="container mx-auto px-4 py-16">
         <div className="mx-auto max-w-md">
           {/* Brand */}
@@ -131,7 +124,7 @@ function GoogleButton({ onClick }: { onClick: () => void }) {
       aria-label="Continue with Google"
       className="w-full inline-flex items-center justify-center gap-3 rounded border border-white/20 bg-white text-neutral-900 px-4 py-2 font-medium hover:opacity-95 active:opacity-90 transition"
     >
-      {/* Google "G" mark (official multi-color) as inline SVG so no extra asset needed */}
+      {/* Google "G" mark */}
       <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
         <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.59 32.155 29.18 35 24 35c-7.18 0-13-5.82-13-13s5.82-13 13-13c3.31 0 6.31 1.23 8.6 3.23l5.66-5.66C34.46 3.42 29.48 1 24 1 11.85 1 2 10.85 2 23s9.85 22 22 22 22-9.85 22-22c0-1.47-.16-2.9-.389-4.917z"/>
         <path fill="#FF3D00" d="M6.306 14.691l6.571 4.818C14.6 16.2 18.94 13 24 13c3.31 0 6.31 1.23 8.6 3.23l5.66-5.66C34.46 3.42 29.48 1 24 1 16.18 1 9.24 5.06 6.306 14.691z"/>
@@ -177,7 +170,6 @@ function SignInForm({ returnTo }: { returnTo: string }) {
       setErr("Invalid email/username or password.");
       setBusy(false);
     } else {
-      // If NextAuth handles redirect:false successfully, navigate; else fallback
       window.location.assign(returnTo);
     }
   }
@@ -191,6 +183,7 @@ function SignInForm({ returnTo }: { returnTo: string }) {
         placeholder="you@domain.com or username"
         value={identifier}
         onChange={(v) => setIdentifier(v)}
+        autoComplete="username"
       />
       <Input
         id="signin-password"
@@ -199,6 +192,7 @@ function SignInForm({ returnTo }: { returnTo: string }) {
         placeholder="••••••••"
         value={password}
         onChange={(v) => setPassword(v)}
+        autoComplete="current-password"
       />
 
       {err && <p className="text-sm text-red-400">{err}</p>}
@@ -314,9 +308,7 @@ function MagicLinkBlock({ returnTo }: { returnTo: string }) {
     e.preventDefault();
     if (!email) return;
     setStatus("sending");
-    // NextAuth Email provider: this triggers a one-time, passwordless link
     const res = await signIn("email", { email, callbackUrl: returnTo, redirect: false });
-    // NextAuth doesn't always return rich info with redirect:false; treat as success unless error present
     if ((res as any)?.error) {
       setStatus("error");
     } else {
@@ -337,7 +329,7 @@ function MagicLinkBlock({ returnTo }: { returnTo: string }) {
       {open && (
         <form onSubmit={sendLink} className="mt-3 space-y-2" aria-live="polite">
           <p className="text-xs opacity-70">
-            Magic links let you sign in without a password. We’ll email you a one‑time secure link.
+            Magic links let you sign in without a password. We’ll email you a one-time secure link.
           </p>
           <Input
             id="magic-email"
@@ -372,7 +364,7 @@ function MagicLinkBlock({ returnTo }: { returnTo: string }) {
 function Input(props: {
   id: string;
   label: string;
-  type: string;
+  type: string; // "text" | "email" | "password" | ...
   placeholder?: string;
   value: string;
   onChange: (v: string) => void;
@@ -380,25 +372,93 @@ function Input(props: {
 }) {
   const { id, label, type, placeholder, value, onChange, autoComplete } = props;
 
+  // For password fields, add show/hide toggle.
+  const isPassword = type === "password";
+  const [reveal, setReveal] = useState(false);
+
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium mb-1">
         {label}
       </label>
-      <input
-        id={id}
-        name={id}
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        autoComplete={autoComplete}
-        // *** Critical visual fixes below ***
-        className="w-full rounded px-3 py-2 border border-neutral-300 bg-white
-                   text-neutral-900 placeholder:text-neutral-500
-                   focus:outline-none focus:ring-2 focus:ring-an-blue-light focus:border-an-blue-light"
-      />
+
+      <div className="relative">
+        <input
+          id={id}
+          name={id}
+          type={isPassword ? (reveal ? "text" : "password") : type}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete={autoComplete}
+          // Ensure best UX for pasting passwords/usernames:
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          // NOTE: We *do not* block paste. Copy-paste works as expected.
+          className={`w-full rounded px-3 py-2 border border-neutral-300 bg-white
+                      text-neutral-900 placeholder:text-neutral-500
+                      focus:outline-none focus:ring-2 focus:ring-an-blue-light focus:border-an-blue-light
+                      ${isPassword ? "pr-10" : ""}`}
+        />
+
+        {isPassword && (
+          <button
+            type="button"
+            aria-label={reveal ? "Hide password" : "Show password"}
+            aria-pressed={reveal}
+            onClick={() => setReveal((v) => !v)}
+            className="absolute inset-y-0 right-0 px-2 flex items-center opacity-80 hover:opacity-100"
+            tabIndex={0}
+          >
+            {/* Eye icon (toggles to eye-off) */}
+            {reveal ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
+/* ------------------------------ Icon Components --------------------------- */
+
+function EyeIcon(props: { className?: string }) {
+  // Heroicons style eye
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      className={props.className}
+      strokeWidth={1.5}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.036 12.322c1.49-3.293 4.93-5.822 9.214-5.822 4.284 0 7.724 2.529 9.214 5.822a.74.74 0 010 .656c-1.49 3.293-4.93 5.822-9.214 5.822-4.284 0-7.724-2.529-9.214-5.822a.74.74 0 010-.656z"
+      />
+      <circle cx="12" cy="12" r="3.25" />
+    </svg>
+  );
+}
+
+function EyeOffIcon(props: { className?: string }) {
+  // Heroicons style eye-slash
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      className={props.className}
+      strokeWidth={1.5}
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.98 8.223C5.86 5.91 8.74 4.5 12.002 4.5c4.284 0 7.724 2.529 9.214 5.822a.74.74 0 010 .656c-.827 1.829-2.176 3.416-3.89 4.521M6.53 6.53l10.94 10.94M9.877 9.877A3.25 3.25 0 0012 15.25c.6 0 1.161-.163 1.64-.447"
+      />
+    </svg>
+  );
+}
