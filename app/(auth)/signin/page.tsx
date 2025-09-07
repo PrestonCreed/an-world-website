@@ -4,7 +4,7 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import Logo from "../../..public/images/an-logo.png";
+import Logo from "@/components/logo";
 
 export default function SignInPage() {
   const supabase = createSupabaseBrowserClient();
