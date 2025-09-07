@@ -1,9 +1,9 @@
 // components/providers/SignupGateProvider.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSession, signIn } from "next-auth/react";
-import { shouldGateOnNext, markPromptShown } from "../../lib/watch-gate";
+import { useEffect, useMemo, useState } from "react";
+import { shouldGateOnNext, markPromptShown } from "@/lib/watch-gate";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 declare global {
   interface Window {
@@ -12,45 +12,49 @@ declare global {
 }
 
 export default function SignupGateProvider({ children }: { children: React.ReactNode }) {
-  const { status } = useSession();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [authed, setAuthed] = useState(false);
   const [show, setShow] = useState(false);
-  const [returnTo, setReturnTo] = useState<string>("/");
 
   useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      setAuthed(!!data.user);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      setAuthed(!!session?.user);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    // Global hook your video player can call to decide whether to prompt signup
     window.AWGate = {
       register: (mediaId: string) => {
-        if (status === "authenticated") return true;
-        if (shouldGateOnNext(mediaId)) {
-          setReturnTo(`/watch/${mediaId}`);
-          setShow(true);
-          markPromptShown();
-          return false;
-        }
-        return true;
+        const gate = !authed && shouldGateOnNext(mediaId);
+        setShow(gate);
+        if (gate) markPromptShown();
+        return gate;
       },
     };
-    return () => {
-      if (window.AWGate) delete window.AWGate;
-    };
-  }, [status]);
+  }, [authed]);
 
   return (
     <>
       {children}
       {show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md bg-white rounded p-6">
-            <h2 className="text-xl font-bold mb-2">Create your AN World account</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              You’ve watched a show — create a free account to keep watching.
-            </p>
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/70 backdrop-blur-sm">
+          <div className="w-[520px] max-w-[92vw] rounded-xl border border-white/15 bg-black/70 p-6">
+            <h3 className="text-xl font-semibold mb-2">Join Anything World</h3>
+            <p className="opacity-80 mb-4">Create a free account to keep watching and unlock more features.</p>
             <div className="flex gap-3">
-              <button
-                className="flex-1 rounded bg-black text-white py-2"
-                onClick={() => signIn(undefined, { callbackUrl: `/signin?returnTo=${encodeURIComponent(returnTo)}` })}
-              >
-                Sign up / Sign in
-              </button>
+              <a href="/signin" className="flex-1 rounded bg-white text-black py-2 text-center">Sign up / Sign in</a>
               <button className="flex-1 rounded border py-2" onClick={() => setShow(false)}>
                 Not now
               </button>
@@ -61,3 +65,4 @@ export default function SignupGateProvider({ children }: { children: React.React
     </>
   );
 }
+

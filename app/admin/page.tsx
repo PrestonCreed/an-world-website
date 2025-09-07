@@ -1,17 +1,16 @@
 // app/admin/page.tsx
-import { getCurrentUser, hasRole } from "@/lib/get-current-user";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getCurrentUser, userHasRole } from "@/lib/get-current-user";
 import { isIpAllowed } from "@/lib/ip-allowlist";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
   const ipHeader = headers().get("x-forwarded-for") ?? null;
-
-  // If ADMIN_IP_WHITELIST is set, request IP must match (for “my computer only”).
   const ipOk = isIpAllowed(ipHeader);
 
-  if (!user || !hasRole(user, "admin") || !ipOk) {
+  const isAdmin = await userHasRole(user?.email, "admin");
+  if (!user || !isAdmin || !ipOk) {
     redirect("/signin");
   }
 
@@ -25,3 +24,4 @@ export default async function AdminPage() {
     </main>
   );
 }
+

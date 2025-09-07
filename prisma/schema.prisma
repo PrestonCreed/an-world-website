@@ -1,55 +1,57 @@
 // prisma/schema.prisma
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")  // runtime (6543, PgBouncer txn)
-  directUrl = env("DIRECT_URL")    // migrate/studio (5432, session)
-}
 
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+        
 /**
  * Core NextAuth models + user profile + RBAC + onboarding
  */
 model User {
-  id             String   @id @default(cuid())
-  name           String?
-  username       String?  @unique
-  email          String?  @unique
-  emailVerified  DateTime?
-  image          String?
-  passwordHash   String?  // present if they use credentials login
-  newsletterOptIn Boolean  @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  name            String?
+  username        String?   @unique
+  email           String?   @unique
+  emailVerified   DateTime?
+  image           String?
+  passwordHash    String? // present if they use credentials login
+  newsletterOptIn Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  accounts       Account[]
-  sessions       Session[]
-  profile        Profile?
-  userRoles      UserRole[]
-  onboarding     Onboarding?
+  accounts   Account[]
+  sessions   Session[]
+  profile    Profile?
+  userRoles  UserRole[]
+  onboarding Onboarding?
 
   @@index([email])
   @@index([username])
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String? @db.Text
-  access_token       String? @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String? @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerAccountId])
 }
 
@@ -72,10 +74,10 @@ model VerificationToken {
 
 /// Optional profile metadata
 model Profile {
-  id          String  @id @default(cuid())
-  userId      String  @unique
+  id          String   @id @default(cuid())
+  userId      String   @unique
   displayName String?
-  handle      String? @unique
+  handle      String?  @unique
   bio         String?
   location    String?
   website     String?
@@ -87,26 +89,26 @@ model Profile {
 
 /// Post‑signup onboarding survey
 model Onboarding {
-  id           String    @id @default(cuid())
-  userId       String    @unique
+  id           String   @id @default(cuid())
+  userId       String   @unique
   usageChoices String[] // e.g. ["watching", "creating", "learning"]
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// RBAC
 model Role {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String           @id @default(cuid())
+  name        String           @unique
   description String?
   users       UserRole[]
   permissions RolePermission[]
 }
 
 model Permission {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String           @id @default(cuid())
+  name        String           @unique
   description String?
   roles       RolePermission[]
 }

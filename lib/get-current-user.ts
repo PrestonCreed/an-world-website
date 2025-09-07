@@ -1,18 +1,21 @@
 // lib/get-current-user.ts
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 
+/** Returns the Supabase user (or null). Safe to call in Server Components/Route Handlers. */
 export async function getCurrentUser() {
-  const session = await getServerSession(authOptions);
-  return session?.user ?? null;
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser();
+  if (error) return null;
+  return data.user ?? null;
 }
 
-export async function requireUser() {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("UNAUTHORIZED");
-  return user;
-}
-
-export function hasRole(user: { roles?: string[] } | null, role: string) {
-  return !!user?.roles?.includes(role);
+/** Look up a role by the user's email in your Prisma RBAC tables. */
+export async function userHasRole(email: string | null | undefined, roleName: string) {
+  if (!email) return false;
+  const hit = await prisma.userRole.findFirst({
+    where: { user: { email }, role: { name: roleName } },
+    select: { userId: true },
+  });
+  return !!hit;
 }

@@ -1,23 +1,21 @@
 // app/api/user/onboarding/route.ts
+// app/api/user/onboarding/route.ts
+// app/api/user/onboarding/route.ts
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next"; // App Router-friendly entrypoint
-import { authOptions } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { z } from "zod";
-import type { Session } from "next-auth";
 
 const Schema = z.object({
   choices: z.array(z.enum(["watching", "live", "creating", "learning"])).min(1),
 });
 
-// Narrow Session | null to a Session that definitely has user.id
-function hasUserId(s: Session | null): s is Session & { user: { id: string } } {
-  return !!s?.user && typeof (s.user as any).id === "string" && (s.user as any).id.length > 0;
-}
-
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions) as Session | null;
-  if (!hasUserId(session)) {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data?.user) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
@@ -27,12 +25,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
+  // Make sure a User row exists keyed by supabase user.id (string)
+  await prisma.user.upsert({
+    where: { id: data.user.id },
+    update: { email: data.user.email ?? undefined },
+    create: { id: data.user.id, email: data.user.email ?? undefined },
+  });
+
   await prisma.onboarding.upsert({
-    where: { userId: session.user.id },
+    where: { userId: data.user.id },
     update: { usageChoices: parsed.data.choices },
-    create: { userId: session.user.id, usageChoices: parsed.data.choices },
+    create: { userId: data.user.id, usageChoices: parsed.data.choices },
   });
 
   return NextResponse.json({ ok: true });
 }
-
