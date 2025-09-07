@@ -2,7 +2,7 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import SignupGateProvider from "./providers/SignUpGateProvider";
+import SignupGateProvider from "./SignUpGateProvider";
 
 export default function RootProviders({ children }: { children: React.ReactNode }) {
   return (
