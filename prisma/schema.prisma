@@ -88,7 +88,7 @@ model Profile {
 model Onboarding {
   id           String    @id @default(cuid())
   userId       String    @unique
-  usageChoices String[]  @db.Text[] // e.g. ["watching", "creating", "learning"]
+  usageChoices String[] // e.g. ["watching", "creating", "learning"]
   createdAt    DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
