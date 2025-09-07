@@ -1,12 +1,13 @@
 // prisma/schema.prisma
 
-generator client {
-  provider = "prisma-client-js"
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")  // runtime (6543, PgBouncer txn)
+  directUrl = env("DIRECT_URL")    // migrate/studio (5432, session)
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+generator client {
+  provider = "prisma-client-js"
 }
 
 /**
