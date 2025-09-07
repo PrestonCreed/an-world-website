@@ -1,8 +1,11 @@
-'use client';
+// components/Header.tsx
+"use client";
+
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "./logo";
+import { useSession, signOut } from "next-auth/react";
 
 const links = [
   { href: "/", label: "Home" },
@@ -14,67 +17,103 @@ const links = [
 
 export default function Header() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
 
+  // close mobile menu on route change
+  useEffect(() => setOpen(false), [pathname]);
+
   return (
-    <header className="sticky top-0 z-50 header-glass">
-      <div className="container h-16 flex items-center justify-between">
-        <Link href="/" aria-label="Anything World Home" className="flex items-center">
+    <header className="sticky top-0 z-40 backdrop-blur border-b border-white/10">
+      <div className="container flex items-center justify-between py-3">
+        <Link href="/" className="flex items-center gap-2">
           <Logo className="h-7 w-auto" />
+          <span className="sr-only">AN World</span>
         </Link>
 
-        {/* Desktop nav, linked like nodes */}
-        <nav className="hidden md:block">
-          <ul className="nav-net">
-            {links.map((l) => {
-              const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
-              return (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className={`text-sm hover:opacity-100 transition ${l.pill ? "pill-outline" : "cta"} ${active ? "opacity-100" : "opacity-70"}`}
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-4">
+          {links.map((l) => {
+            const active = pathname === l.href;
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`px-3 py-1 rounded-full transition ${
+                  l.pill ? "border border-white/20" : ""
+                } ${active ? "bg-white/10" : "hover:bg-white/5"}`}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* Right actions */}
+        {/* Right side actions */}
         <div className="hidden md:flex items-center gap-3">
-          <button className="search-button" aria-label="Search">search</button>
-          <a href="/signup" className="text-sm rounded-full border border-white/20 px-4 py-2 hover:bg-white/10 transition">Sign Up</a>
+          {/* your existing search button could live here */}
+          {/* <button className="search-button">search</button> */}
+          {status === "authenticated" ? (
+            <>
+              <span className="text-sm opacity-80">
+                {session.user?.name ?? session.user?.email ?? "Account"}
+              </span>
+              <button
+                className="rounded-full border border-white/20 px-4 py-2"
+                onClick={() => signOut({ callbackUrl: "/" })}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <Link href="/signin" className="rounded-full border border-white/20 px-4 py-2">
+              Sign in
+            </Link>
+          )}
         </div>
 
-        {/* Mobile nav toggle */}
+        {/* Mobile menu button */}
         <button
-          className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-white/10"
-          aria-label="Open menu"
-          onClick={() => setOpen(v => !v)}
+          className="md:hidden rounded border border-white/20 px-3 py-1"
+          onClick={() => setOpen((v) => !v)}
+          aria-label="Toggle navigation"
         >
-          ☰
+          Menu
         </button>
       </div>
 
-      {/* Mobile sheet */}
+      {/* Mobile drawer */}
       {open && (
-        <div className="md:hidden border-t border-white/10 bg-black/90 backdrop-blur-sm">
-          <div className="container py-3 flex flex-col gap-2">
+        <div className="md:hidden border-t border-white/10">
+          <div className="container py-3 space-y-2">
             {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`py-2 ${l.pill ? "pill-outline inline-block w-max" : ""}`}
+                className={`block px-3 py-2 rounded ${pathname === l.href ? "bg-white/10" : "hover:bg-white/5"}`}
                 onClick={() => setOpen(false)}
               >
                 {l.label}
               </Link>
             ))}
             <div className="pt-2 flex gap-3">
-              <a href="/signup" className="rounded-full border border-white/20 px-4 py-2">Sign Up</a>
-              <button className="search-button">search</button>
+              {status === "authenticated" ? (
+                <button
+                  className="flex-1 rounded border border-white/20 px-4 py-2"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                >
+                  Sign out
+                </button>
+              ) : (
+                <Link
+                  href="/signin"
+                  className="flex-1 text-center rounded border border-white/20 px-4 py-2"
+                  onClick={() => setOpen(false)}
+                >
+                  Sign in
+                </Link>
+              )}
+              {/* <button className="search-button flex-1 rounded border border-white/20 px-4 py-2">search</button> */}
             </div>
           </div>
         </div>

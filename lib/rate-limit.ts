@@ -1,88 +1,63 @@
-// Redis-backed fixed-window rate limiter (Upstash).
-// Env required:
-//   UPSTASH_REDIS_REST_URL
-//   UPSTASH_REDIS_REST_TOKEN
-//
-// Usage in an API route:
-//   import { limitByIP } from "@/lib/rate-limit";
-//   const rl = await limitByIP(request, { limit: 60, windowMs: 60_000 });
-//   if (!rl.success) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-
+// /lib/rate-limit.ts
+import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-export type RateLimitResult = {
-  success: boolean;
-  limit: number;
-  remaining: number;
-  reset: number; // epoch seconds
-};
+// Reads UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN from env
+const redis = Redis.fromEnv();
 
-// ---- Defensive env checks (fail early with a clear message)
-const URL = process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+/**
+ * Global limiter instances, reuse across calls to avoid cold starts.
+ * Choose the algorithm best suited for your route:
+ *  - slidingWindow: smoother user experience
+ *  - fixedWindow: bursty but simpler
+ *  - tokenBucket: allows short bursts up to capacity
+ */
 
-if (!URL || !TOKEN) {
-  const missing = [
-    !URL ? "UPSTASH_REDIS_REST_URL" : null,
-    !TOKEN ? "UPSTASH_REDIS_REST_TOKEN" : null,
-  ].filter(Boolean).join(", ");
-  throw new Error(
-    `Redis rate-limit is enabled but missing env var(s): ${missing}.
-Set them in .env.local:
+// Example: 5 requests per 60s (good for contact forms, tests, etc.)
+export const rlContact = new Ratelimit({
+  redis,
+  // sliding window of 1 minute with 5 tokens
+  limiter: Ratelimit.slidingWindow(5, "60 s"),
+  analytics: true,
+  prefix: "rl:contact", // namespace keys
+});
 
-UPSTASH_REDIS_REST_URL=https://...upstash.io
-UPSTASH_REDIS_REST_TOKEN=xxxxxxxx
+// Example: general API guard — 60 req / minute per identity
+export const rlGeneral = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, "60 s"),
+  analytics: true,
+  prefix: "rl:api",
+});
 
-Then restart: npm run dev`
-  );
+/**
+ * Identify the caller:
+ *  - If user is authenticated, prefer userId
+ *  - Otherwise fall back to IP
+ */
+export function getIdentityForRequest(req: Request, userId?: string | null) {
+  if (userId) return `user:${userId}`;
+  // Try Next.js/Vercel IP first
+  // @ts-ignore - NextRequest has .ip; native Request doesn't, so we fall back to headers.
+  const ip = (req as any).ip ??
+    req.headers.get("x-real-ip") ??
+    (req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown");
+  return `ip:${ip}`;
 }
 
-const redis = new Redis({ url: URL, token: TOKEN });
-
-function ipFromRequest(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) {
-    const ip = xff.split(",")[0]?.trim();
-    if (ip) return ip;
-  }
-  const cf = (req.headers.get("cf-connecting-ip") || req.headers.get("true-client-ip"))?.trim();
-  if (cf) return cf;
-  return "0.0.0.0";
+/**
+ * Helper to set standard rate limit headers on a Response.
+ */
+export function withRateHeaders(
+  res: Response,
+  limit: number,
+  remaining: number,
+  resetSeconds: number
+) {
+  const headers = new Headers(res.headers);
+  headers.set("X-RateLimit-Limit", String(limit));
+  headers.set("X-RateLimit-Remaining", String(Math.max(remaining, 0)));
+  headers.set("X-RateLimit-Reset", String(resetSeconds));
+  return new Response(res.body, { status: res.status, headers });
 }
 
-function keyFor(identifier: string, windowMs: number) {
-  const now = Date.now();
-  const windowStart = Math.floor(now / windowMs) * windowMs;
-  return `rl:${identifier}:${windowStart}:${windowMs}`;
-}
-
-export async function limit(
-  identifier: string,
-  opts?: { limit?: number; windowMs?: number }
-): Promise<RateLimitResult> {
-  const max = opts?.limit ?? 60;
-  const windowMs = opts?.windowMs ?? 60_000;
-
-  const key = keyFor(identifier, windowMs);
-  // INCR and set expiry atomically
-  const p = redis.pipeline();
-  p.incr(key);
-  p.expire(key, Math.ceil(windowMs / 1000));
-  const [countRaw] = (await p.exec()) as [number, unknown];
-
-  const count = Number(countRaw || 0);
-  const remaining = Math.max(0, max - count);
-  const reset = Math.floor((Math.floor(Date.now() / windowMs) * windowMs + windowMs) / 1000);
-
-  return {
-    success: count <= max,
-    limit: max,
-    remaining,
-    reset,
-  };
-}
-
-export async function limitByIP(req: Request, opts?: { limit?: number; windowMs?: number }) {
-  const id = ipFromRequest(req);
-  return limit(id, opts);
-}
