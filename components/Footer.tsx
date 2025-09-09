@@ -1,4 +1,4 @@
-import Logo from "./Logo";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -7,7 +7,17 @@ export default function Footer() {
         {/* Brand / tagline */}
         <div>
           <div className="mb-3">
-            <Logo className="h-8 w-auto" />
+            {/* Logo (height ~ h-8 to match old styling) */}
+            <div className="relative h-8 w-[160px]">
+              <Image
+                src="/images/an-logo.png"
+                alt="Anything World logo"
+                fill
+                className="object-contain"
+                sizes="160px"
+                priority
+              />
+            </div>
           </div>
           <p className="text-sm opacity-80 max-w-sm">
             You can build worlds, you can do anything

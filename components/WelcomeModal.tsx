@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from "react";
-import Logo from "./Logo";
+import Image from "next/image";
 
 export default function WelcomeModal() {
   const [open, setOpen] = useState(false);
@@ -8,7 +8,7 @@ export default function WelcomeModal() {
   const timerRef = useRef<number | null>(null);
   const startedByScroll = useRef(false);
 
-  useEffect(()=>{
+  useEffect(() => {
     if (typeof window === "undefined") return;
     if (localStorage.getItem("an_welcome_seen")) return;
 
@@ -26,13 +26,13 @@ export default function WelcomeModal() {
     const startTimer = () => {
       if (timerRef.current) return;
       startedByScroll.current = true;
-      timerRef.current = window.setTimeout(()=> setOpen(true), 12000);
+      timerRef.current = window.setTimeout(() => setOpen(true), 12000);
       window.removeEventListener("scroll", startTimer);
     };
     window.addEventListener("scroll", startTimer, { passive: true, once: true });
 
     // Fallback: 15s after load if no scroll occurs
-    timerRef.current = window.setTimeout(()=> {
+    timerRef.current = window.setTimeout(() => {
       if (!startedByScroll.current) setOpen(true);
     }, 15000);
 
@@ -50,19 +50,29 @@ export default function WelcomeModal() {
       <div className="max-w-lg w-full mx-4 rounded-2xl border border-white/15 bg-black/90 p-6 relative">
         <button
           className="absolute right-3 top-3 opacity-70 hover:opacity-100"
-          onClick={()=>{ setDismissed(true); localStorage.setItem("an_welcome_seen","1"); }}
+          onClick={() => { setDismissed(true); localStorage.setItem("an_welcome_seen", "1"); }}
           aria-label="Close"
-        >✕</button>
+        >
+          ✕
+        </button>
 
         <div className="flex items-center gap-3 mb-3">
-          <div className="h-7 w-auto">
-            <Logo className="h-7 w-auto" />
+          {/* Logo (height ~ h-7 to match old styling) */}
+          <div className="relative h-7 w-[140px]">
+            <Image
+              src="/images/an-logo.png"
+              alt="Anything World logo"
+              fill
+              className="object-contain"
+              priority
+              sizes="140px"
+            />
           </div>
         </div>
 
         <h3 className="text-xl font-semibold mb-2">Welcome to Anything World</h3>
         <p className="opacity-80">
-          We’re building a next‑generation entertainment brand and creator ecosystem. Explore our worlds,
+          We’re building a next-generation entertainment brand and creator ecosystem. Explore our worlds,
           follow the journey, and get involved as we invent new, living story spaces.
         </p>
         <p className="opacity-80 mt-2">
@@ -70,7 +80,12 @@ export default function WelcomeModal() {
         </p>
 
         <div className="mt-5 flex gap-3">
-          <a href="/learn" className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm hover:bg-white/10 transition">Learn More</a>
+          <a
+            href="/learn"
+            className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm hover:bg-white/10 transition"
+          >
+            Learn More
+          </a>
         </div>
       </div>
     </div>
