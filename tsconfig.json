@@ -19,13 +19,10 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "types": [
-      "node",
-      "next-auth"     // <-- add this so the Session augmentation is loaded
-    ],
-    "plugins": [
-      { "name": "next" }
-    ]
+    // ⬇️ Remove "next-auth" here; v5 provides its own types and
+    // does not require (or expose) a global type lib entry.
+    "types": ["node"],
+    "plugins": [{ "name": "next" }]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
