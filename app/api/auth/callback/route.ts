@@ -1,5 +1,7 @@
 // app/api/auth/callback/route.ts
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
@@ -14,30 +16,24 @@ export async function GET(req: NextRequest) {
   const fallbackRedirect = type === "recovery" ? "/reset-password" : "/";
 
   // Prepare a response we can write cookies to
-  const res = NextResponse.redirect(new URL(redirectParam || fallbackRedirect, url.origin));
+  let res = NextResponse.redirect(new URL(redirectParam || fallbackRedirect, url.origin));
 
+  // Create a Supabase client bound to this request/response pair
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return req.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          res.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          res.cookies.set({ name, value: "", ...options, maxAge: 0 });
-        },
+        get(name: string) { return req.cookies.get(name)?.value; },
+        set(name: string, value: string, options: any) { res.cookies.set({ name, value, ...options }); },
+        remove(name: string, options: any) { res.cookies.set({ name, value: "", ...options, maxAge: 0 }); },
       },
     }
   );
 
-  // Some flows might not include a code; if so just redirect
   if (!code) return res;
 
-  // DOC STEP: Exchange the PKCE one-time code for a cookie session
+  // Exchange the PKCE one-time code for a cookie session
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     return NextResponse.redirect(new URL("/signin?error=auth", url.origin));

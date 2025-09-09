@@ -2,23 +2,17 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // never pre-render this
 export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { PrismaClient } from "@prisma/client";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getPrisma } from "@/lib/prisma";
 
 // Acceptable payload shape
 const BodySchema = z.object({
   choices: z.array(z.enum(["watching", "live", "creating", "learning"])).min(1),
 });
 
-/**
- * SAFETY GET:
- * Some server component / prefetch might call GET during build.
- * Always return a small OK payload so build never fails here.
- */
+// Lightweight GET so build/prefetchers never explode
 export async function GET() {
   try {
     return NextResponse.json({ ok: true });
@@ -37,28 +31,24 @@ export async function POST(req: Request) {
     }
 
     // Auth check (will be missing during build/prefetch; just return 401, don't throw)
+    const { createSupabaseServerClient } = await import("@/lib/supabase/server");
     const supabase = createSupabaseServerClient();
     const { data, error } = await supabase.auth.getUser();
     if (error || !data?.user) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
     }
+    const user = data.user;
 
     // Validate body
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json();
     const parsed = BodySchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
+      return NextResponse.json({ ok: false, error: "invalid_body" }, { status: 400 });
     }
 
-    const { user } = data;
-
-    // Persist (adjust model/table names if different)
-    const prisma: PrismaClient = getPrisma();
-    await prisma.user.upsert({
-      where: { id: user.id },
-      update: { email: user.email ?? undefined },
-      create: { id: user.id, email: user.email ?? undefined },
-    });
+    // Lazy-load Prisma on demand (avoids build-time engine init)
+    const { getPrisma } = await import("@/lib/prisma");
+    const prisma = getPrisma();
 
     await prisma.onboarding.upsert({
       where: { userId: user.id },
@@ -72,4 +62,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "server_error" }, { status: 200 });
   }
 }
+
 
