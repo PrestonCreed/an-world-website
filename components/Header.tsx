@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image"; // swapped in for Logo
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -16,9 +17,46 @@ const links = [
   { href: "/contact", label: "Contact" },
 ];
 
+function Logo() {
+  return (
+    <Link href="/" aria-label="Home" className="flex items-center gap-2">
+      <Image src="/logo.svg" width={28} height={28} alt="Logo" />
+      <span className="font-semibold">AN World</span>
+    </Link>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+      <path
+        d="M3 6h18M3 12h18M3 18h18"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+      <path
+        d="m6 6 12 12M18 6 6 18"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function SearchIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className ?? "h-4 w-4"}>
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className ?? "h-5 w-5"}>
       <path
         d="M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm9.3 14.9-3.6-3.6"
         stroke="currentColor"
@@ -53,16 +91,18 @@ export default function Header() {
     let mounted = true;
 
     // Prime auth state
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
       if (!mounted) return;
       setStatus(data.user ? "authenticated" : "unauthenticated");
     });
 
     // Subscribe to auth changes
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
-      if (!mounted) return;
-      setStatus(session?.user ? "authenticated" : "unauthenticated");
-    });
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_evt: AuthChangeEvent, session: Session | null) => {
+        if (!mounted) return;
+        setStatus(session?.user ? "authenticated" : "unauthenticated");
+      }
+    );
 
     // Click outside to close the user menu
     function onDocClick(e: MouseEvent) {
@@ -79,244 +119,124 @@ export default function Header() {
   }, [supabase]);
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur border-b border-white/10">
-      <div className="container flex items-center justify-between py-3">
-        <Link href="/" className="flex items-center gap-2">
-          {/* Logo replaced with next/image */}
-          <div className="relative h-7 w-[140px]">
-            <Image
-              src="/images/an-logo.png"
-              alt="Anything World logo"
-              fill
-              className="object-contain"
-              sizes="140px"
-              priority
-            />
+    <header className="sticky top-0 z-40 backdrop-blur border-b border-white/10 bg-black/30">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-14 items-center justify-between">
+          {/* Left: Logo */}
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              className="sm:hidden p-2 rounded hover:bg-white/10"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMobileOpen((v) => !v)}
+            >
+              {mobileOpen ? <CloseIcon /> : <MenuIcon />}
+            </button>
+            <Logo />
           </div>
-          <span className="sr-only">AN World</span>
-        </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden md:block">
-          <ul className="connected-nav flex items-center gap-3">
+          {/* Center: Nav (desktop) */}
+          <nav className="hidden sm:flex items-center gap-6">
             {links.map((l) => {
               const active = pathname === l.href;
               return (
-                <li key={l.href} className="relative">
-                  <Link
-                    href={l.href}
-                    className={`connected-pill ${active ? "bg-white/10" : "hover:bg-white/5"}`}
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* Right side actions */}
-        <div className="hidden md:flex items-center gap-3">
-          {/* Search button */}
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 hover:bg-white/5"
-            aria-label="Search"
-            onClick={() => alert("Search coming soon")}
-          >
-            <SearchIcon className="h-4 w-4 opacity-80" />
-            <span className="text-sm tracking-wide opacity-90">Search</span>
-          </button>
-
-          {status === "authenticated" ? (
-            <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center justify-center rounded-full border border-white/20 p-2 hover:bg-white/5"
-                aria-haspopup="menu"
-                aria-expanded={menuOpen}
-                aria-label="User menu"
-              >
-                <UserIcon className="h-5 w-5 opacity-90" />
-              </button>
-              {menuOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 mt-2 w-60 rounded-xl border border-white/10 bg-black/90 backdrop-blur shadow-lg shadow-cyan-500/10 p-2"
-                >
-                  <div className="px-3 pb-2 pt-1 text-xs uppercase tracking-wide opacity-70">
-                    Account
-                  </div>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
-                    Profile Settings
-                  </button>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
-                    Plan
-                  </button>
-                  <Link href="/creator-program" className="menu-item">
-                    Sign Up for Creator Program
-                  </Link>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
-                    Watch History
-                  </button>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
-                    Favorites
-                  </button>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
-                    Settings
-                  </button>
-                  <div className="my-1 border-t border-white/10" />
-                  <button
-                    className="menu-item !text-red-400 hover:!bg-red-500/10"
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                      window.location.assign("/");
-                    }}
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <Link
-                href="/signin"
-                className="rounded-full border border-white/20 px-4 py-2 hover:bg-white/5"
-              >
-                Sign in
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden rounded border border-white/20 px-3 py-1"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label="Toggle navigation"
-        >
-          Menu
-        </button>
-      </div>
-
-      {/* Mobile drawer */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-white/10">
-          <div className="container py-3 space-y-3">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                className="flex-1 flex items-center justify-center gap-2 rounded border border-white/20 px-4 py-2"
-                onClick={() => alert("Search coming soon")}
-              >
-                <SearchIcon className="h-4 w-4 opacity-80" />
-                <span className="text-sm tracking-wide opacity-90">Search</span>
-              </button>
-              {status === "unauthenticated" && (
-                <Link
-                  href="/signin"
-                  className="flex-1 text-center rounded border border-white/20 px-4 py-2"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Sign in
-                </Link>
-              )}
-            </div>
-
-            <nav className="grid gap-1">
-              {links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`block px-3 py-2 rounded ${
-                    pathname === l.href ? "bg-white/10" : "hover:bg-white/5"
+                  className={`text-sm transition-colors ${
+                    active ? "text-white" : "text-white/70 hover:text-white"
                   }`}
-                  onClick={() => setMobileOpen(false)}
                 >
                   {l.label}
                 </Link>
-              ))}
-              {status === "authenticated" && (
+              );
+            })}
+          </nav>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-3">
+            <button className="p-2 rounded hover:bg-white/10" aria-label="Search">
+              <SearchIcon />
+            </button>
+
+            {status === "loading" && (
+              <div className="h-8 w-8 rounded-full bg-white/10 animate-pulse" />
+            )}
+
+            {status === "unauthenticated" && (
+              <Link
+                href="/signin"
+                className="text-sm rounded bg-white text-black px-3 py-1.5 hover:opacity-90"
+              >
+                Sign in
+              </Link>
+            )}
+
+            {status === "authenticated" && (
+              <div className="relative" ref={menuRef}>
                 <button
-                  className="mt-2 w-full rounded border border-white/20 px-4 py-2 text-left"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    window.location.assign("/");
-                  }}
+                  className="p-2 rounded hover:bg-white/10"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen((v) => !v)}
                 >
-                  Sign Out
+                  <UserIcon />
                 </button>
-              )}
-            </nav>
+
+                {menuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-40 rounded border border-white/10 bg-black/90 p-1 shadow-lg"
+                  >
+                    <Link
+                      href="/admin"
+                      role="menuitem"
+                      className="block px-3 py-2 rounded text-sm hover:bg-white/10"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      role="menuitem"
+                      className="block w-full text-left px-3 py-2 rounded text-sm hover:bg-white/10"
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        setMenuOpen(false);
+                      }}
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Local styles */}
-      <style jsx global>{`
-        .connected-nav .connected-pill {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          padding: 0.375rem 0.75rem; /* px-3 py-1.5 */
-          border-radius: 9999px;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          box-shadow: 0 0 24px rgba(56, 189, 248, 0.28);
-          transition: background-color 120ms ease, box-shadow 200ms ease;
-        }
-        .connected-nav li {
-          position: relative;
-        }
-        .connected-nav li::after {
-          content: "";
-          position: absolute;
-          top: 50%;
-          right: -10px;
-          width: 20px;
-          height: 1px;
-          transform: translateY(-50%);
-          background: linear-gradient(
-            to right,
-            rgba(255, 255, 255, 0.3),
-            rgba(56, 189, 248, 0.7),
-            rgba(255, 255, 255, 0.3)
-          );
-          filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
-        }
-        .connected-nav li:last-child::after {
-          display: none;
-        }
-        .connected-nav li::before {
-          content: "";
-          position: absolute;
-          top: 50%;
-          right: -12px;
-          width: 6px;
-          height: 6px;
-          border-radius: 9999px;
-          transform: translate(50%, -50%);
-          background: #0ea5e9;
-          border: 1px solid rgba(255, 255, 255, 0.9);
-          box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
-        }
-        .connected-nav li:last-child::before {
-          display: none;
-        }
-        .menu-item {
-          width: 100%;
-          text-align: left;
-          padding: 0.5rem 0.75rem;
-          border-radius: 0.5rem;
-          font-size: 0.95rem;
-          line-height: 1.25rem;
-          color: rgba(255, 255, 255, 0.92);
-        }
-        .menu-item:hover {
-          background: rgba(255, 255, 255, 0.06);
-        }
-      `}</style>
+        {/* Mobile nav */}
+        {mobileOpen && (
+          <nav className="sm:hidden py-2">
+            <div className="flex flex-col gap-1">
+              {links.map((l) => {
+                const active = pathname === l.href;
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className={`px-3 py-2 rounded text-sm ${
+                      active ? "bg-white/10" : "hover:bg-white/10"
+                    }`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        )}
+      </div>
     </header>
   );
 }
+

@@ -1,7 +1,11 @@
+// app/(auth)/onboarding/page.tsx
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+
+export const dynamic = "force-dynamic";
 
 const OPTIONS = [
   { key: "watching", label: "Watching live streams / shows" },
@@ -10,7 +14,8 @@ const OPTIONS = [
   { key: "learning", label: "I want to learn and explore" },
 ] as const;
 
-export default function OnboardingPage() {
+// Inner component uses useSearchParams; it must live under a Suspense boundary
+function OnboardingInner() {
   const [sel, setSel] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -77,5 +82,15 @@ export default function OnboardingPage() {
     </main>
   );
 }
+
+// Thin wrapper to satisfy Next's requirement for a Suspense boundary
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingInner />
+    </Suspense>
+  );
+}
+
 
 

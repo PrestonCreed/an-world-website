@@ -19,19 +19,16 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     let mounted = true;
 
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (evt: AuthChangeEvent) => {
-        if (!mounted) return;
-        if (evt === "PASSWORD_RECOVERY") setReady(true);
-      }
-    );
+    // Either PASSWORD_RECOVERY or a live cookie session from callback makes us "ready"
+    const { data: sub } = supabase.auth.onAuthStateChange((evt: AuthChangeEvent) => {
+      if (!mounted) return;
+      if (evt === "PASSWORD_RECOVERY") setReady(true);
+    });
 
-    supabase.auth.getUser().then(
-      ({ data }: { data: { user: User | null } }) => {
-        if (!mounted) return;
-        if (data.user) setReady(true);
-      }
-    );
+    supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
+      if (!mounted) return;
+      if (data.user) setReady(true);
+    });
 
     return () => {
       mounted = false;
@@ -73,9 +70,7 @@ export default function ResetPasswordPage() {
       >
         <h1 className="text-2xl font-semibold mb-1">Reset your password</h1>
         <p className="text-sm opacity-80 mb-4">
-          {ready
-            ? "Enter a new password for your account."
-            : "Verifying your recovery link…"}
+          {ready ? "Enter a new password for your account." : "Verifying your recovery link…"}
         </p>
 
         <label className="block text-sm mb-1">New password</label>
@@ -113,6 +108,7 @@ export default function ResetPasswordPage() {
     </main>
   );
 }
+
 
 
 
