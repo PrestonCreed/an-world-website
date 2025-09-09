@@ -14,17 +14,20 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    // 🔽 Root alias so "@/..." resolves from the project root
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     },
-    // ⬇️ Remove "next-auth" here; v5 provides its own types and
-    // does not require (or expose) a global type lib entry.
     "types": ["node"],
     "plugins": [{ "name": "next" }]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", "scripts/**"]
 }
-
