@@ -1,10 +1,9 @@
-// components/Header.tsx
 "use client";
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Logo from "./logo";
+import Image from "next/image"; // swapped in for Logo
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -83,14 +82,24 @@ export default function Header() {
     <header className="sticky top-0 z-40 backdrop-blur border-b border-white/10">
       <div className="container flex items-center justify-between py-3">
         <Link href="/" className="flex items-center gap-2">
-          <Logo className="h-7 w-auto" />
+          {/* Logo replaced with next/image */}
+          <div className="relative h-7 w-[140px]">
+            <Image
+              src="/images/an-logo.png"
+              alt="Anything World logo"
+              fill
+              className="object-contain"
+              sizes="140px"
+              priority
+            />
+          </div>
           <span className="sr-only">AN World</span>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:block">
           <ul className="connected-nav flex items-center gap-3">
-            {links.map((l, i) => {
+            {links.map((l) => {
               const active = pathname === l.href;
               return (
                 <li key={l.href} className="relative">
@@ -113,7 +122,7 @@ export default function Header() {
             type="button"
             className="flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 hover:bg-white/5"
             aria-label="Search"
-            onClick={() => alert('Search coming soon')}
+            onClick={() => alert("Search coming soon")}
           >
             <SearchIcon className="h-4 w-4 opacity-80" />
             <span className="text-sm tracking-wide opacity-90">Search</span>
@@ -139,12 +148,24 @@ export default function Header() {
                   <div className="px-3 pb-2 pt-1 text-xs uppercase tracking-wide opacity-70">
                     Account
                   </div>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>Profile Settings</button>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>Plan</button>
-                  <Link href="/creator-program" className="menu-item">Sign Up for Creator Program</Link>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>Watch History</button>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>Favorites</button>
-                  <button className="menu-item" onClick={(e) => e.preventDefault()}>Settings</button>
+                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
+                    Profile Settings
+                  </button>
+                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
+                    Plan
+                  </button>
+                  <Link href="/creator-program" className="menu-item">
+                    Sign Up for Creator Program
+                  </Link>
+                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
+                    Watch History
+                  </button>
+                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
+                    Favorites
+                  </button>
+                  <button className="menu-item" onClick={(e) => e.preventDefault()}>
+                    Settings
+                  </button>
                   <div className="my-1 border-t border-white/10" />
                   <button
                     className="menu-item !text-red-400 hover:!bg-red-500/10"
@@ -160,7 +181,10 @@ export default function Header() {
             </div>
           ) : (
             <>
-              <Link href="/signin" className="rounded-full border border-white/20 px-4 py-2 hover:bg-white/5">
+              <Link
+                href="/signin"
+                className="rounded-full border border-white/20 px-4 py-2 hover:bg-white/5"
+              >
                 Sign in
               </Link>
             </>
@@ -185,7 +209,7 @@ export default function Header() {
               <button
                 type="button"
                 className="flex-1 flex items-center justify-center gap-2 rounded border border-white/20 px-4 py-2"
-                onClick={() => alert('Search coming soon')}
+                onClick={() => alert("Search coming soon")}
               >
                 <SearchIcon className="h-4 w-4 opacity-80" />
                 <span className="text-sm tracking-wide opacity-90">Search</span>
@@ -206,7 +230,9 @@ export default function Header() {
                 <Link
                   key={l.href}
                   href={l.href}
-                  className={`block px-3 py-2 rounded ${pathname === l.href ? "bg-white/10" : "hover:bg-white/5"}`}
+                  className={`block px-3 py-2 rounded ${
+                    pathname === l.href ? "bg-white/10" : "hover:bg-white/5"
+                  }`}
                   onClick={() => setMobileOpen(false)}
                 >
                   {l.label}
@@ -228,7 +254,7 @@ export default function Header() {
         </div>
       )}
 
-      {/* Local styles for the connected node effect and menu items */}
+      {/* Local styles */}
       <style jsx global>{`
         .connected-nav .connected-pill {
           position: relative;
@@ -236,14 +262,13 @@ export default function Header() {
           align-items: center;
           padding: 0.375rem 0.75rem; /* px-3 py-1.5 */
           border-radius: 9999px;
-          border: 1px solid rgba(255,255,255,0.2);
-          box-shadow: 0 0 24px rgba(56,189,248,0.28);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 0 24px rgba(56, 189, 248, 0.28);
           transition: background-color 120ms ease, box-shadow 200ms ease;
         }
         .connected-nav li {
           position: relative;
         }
-        /* Connector line */
         .connected-nav li::after {
           content: "";
           position: absolute;
@@ -254,16 +279,15 @@ export default function Header() {
           transform: translateY(-50%);
           background: linear-gradient(
             to right,
-            rgba(255,255,255,0.3),
-            rgba(56,189,248,0.7),
-            rgba(255,255,255,0.3)
+            rgba(255, 255, 255, 0.3),
+            rgba(56, 189, 248, 0.7),
+            rgba(255, 255, 255, 0.3)
           );
-          filter: drop-shadow(0 0 6px rgba(56,189,248,0.8));
+          filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8));
         }
         .connected-nav li:last-child::after {
           display: none;
         }
-        /* Connector dot at the end of each line */
         .connected-nav li::before {
           content: "";
           position: absolute;
@@ -273,14 +297,13 @@ export default function Header() {
           height: 6px;
           border-radius: 9999px;
           transform: translate(50%, -50%);
-          background: #0ea5e9; /* brand blue */
-          border: 1px solid rgba(255,255,255,0.9);
-          box-shadow: 0 0 10px rgba(56,189,248,0.7);
+          background: #0ea5e9;
+          border: 1px solid rgba(255, 255, 255, 0.9);
+          box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
         }
         .connected-nav li:last-child::before {
           display: none;
         }
-        /* Dropdown menu item */
         .menu-item {
           width: 100%;
           text-align: left;
@@ -288,10 +311,10 @@ export default function Header() {
           border-radius: 0.5rem;
           font-size: 0.95rem;
           line-height: 1.25rem;
-          color: rgba(255,255,255,0.92);
+          color: rgba(255, 255, 255, 0.92);
         }
         .menu-item:hover {
-          background: rgba(255,255,255,0.06);
+          background: rgba(255, 255, 255, 0.06);
         }
       `}</style>
     </header>
