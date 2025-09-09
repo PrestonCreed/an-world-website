@@ -1,0 +1,125 @@
+AN World Email Helpers Reference
+================================
+
+This document explains how to use the helper functions for sending AN World emails via Resend.
+
+---
+
+1. Sign-Up Email (Welcome)
+--------------------------
+Helper: sendSignUpEmail()
+
+Usage:
+  await sendSignUpEmail({
+    to: user.email,
+    heroTopImageUrl: 'https://.../welcome-hero-1.jpg',
+    heroBottomImageUrl: 'https://.../welcome-hero-2.jpg',
+    ctaUrl: process.env.SITE_URL!,
+  });
+
+Description:
+- Sends the "Welcome to AN World!" sign-up confirmation email.
+- Includes two custom image slots (`heroTopImageUrl` and `heroBottomImageUrl`), both clickable and linked to `ctaUrl`.
+- Provides a headline, subheading, and body text from the AN World brand copy.
+- Includes a CTA button "Go back to an.world".
+- Footer includes tiny disclaimer text.
+
+---
+
+2. Confirm Your Email
+---------------------
+Helper: sendConfirmEmail()
+
+Usage:
+  const confirmUrl = await generateEmailConfirmationLink(user.email);
+  await sendConfirmEmail({
+    to: user.email,
+    confirmUrl,
+    heroImageUrl: 'https://.../confirm-hero.jpg',
+  });
+
+Description:
+- Sends the "Please confirm your email address to sign into AN World" message.
+- Requires a confirmation link (`confirmUrl`) generated via Supabase admin.generateLink().
+- Optionally includes a hero image clickable to the confirm link.
+- Provides a fallback button "Click Here to Confirm".
+- Includes tiny disclaimer text in footer.
+
+---
+
+3. Reset Your Password
+----------------------
+Helper: sendResetPasswordEmail()
+
+Usage:
+  const resetUrl = await generatePasswordResetLink(user.email);
+  await sendResetPasswordEmail({
+    to: user.email,
+    resetUrl,
+    userEmail: user.email,
+  });
+
+Description:
+- Sends the "Reset your password for an.world" email.
+- Requires a password reset link (`resetUrl`) generated via Supabase admin.generateLink().
+- References the user's email in the body if passed (`userEmail`).
+- Provides a button "Reset Password".
+- Includes footer text clarifying action can be ignored if not requested.
+
+---
+
+4. Newsletter Email (Reusable Weekly Template)
+----------------------------------------------
+Helper: sendNewsletterEmail()
+
+Usage:
+  await sendNewsletterEmail('person@example.com', {
+    title: 'AN Universe — This Week',
+    subheading: 'Fresh worlds, teasers, and creator spotlight.',
+    newsHeadliner: { title: 'Our biggest drop', imageUrl: 'https://.../headliner.jpg', href: 'https://an.world/blog/big' },
+    newContentThisWeek: [
+      { imageUrl: 'https://.../1.jpg', title: 'New Short #1', description: '...', href: 'https://an.world/watch/1' },
+      // ...
+    ],
+    comingSoon: [
+      { title: 'Epic Series', description: 'Trailer next week', href: 'https://an.world/title/epic' },
+      // ...
+    ],
+    latestBlogs: [{ title: 'Behind the scenes', href: 'https://an.world/blog/bts' }],
+    weeklyTeaser: { text: 'A portal opens...', imageUrl: 'https://.../teaser.jpg', href: 'https://an.world/teaser' },
+    creatorOfWeek: { name: 'A. Creator', avatarUrl: 'https://.../avatar.jpg', blurb: 'New visionary world', href: 'https://an.world/creator/acreator' },
+    creatorProgramAd: {
+      title: 'Build with AN',
+      copy: 'Submit a project, propose a partnership, or pre‑signup for the Creator Program.',
+      ctas: [
+        { label: 'Submit a project', href: 'https://an.world/creator-program/submit' },
+        { label: 'Partnerships', href: 'mailto:creator@an.world' },
+        { label: 'Pre‑signup', href: 'https://an.world/creator-program' },
+      ],
+    },
+    unsubscribeUrl: 'https://an.world/api/newsletter/unsubscribe?email=person@example.com&s=abc123',
+  });
+
+Description:
+- Sends the AN Universe weekly newsletter template.
+- Supports sections:
+  * News Headliner
+  * New Content This Week (grid of ~6)
+  * Coming Soon (3 items)
+  * Latest Blogs/News (list)
+  * Weekly Teaser
+  * Creator of the Week (spotlight block)
+  * Creator Program Ad (title, copy, CTAs)
+- Each section is optional and customizable.
+- Supports per-user unsubscribe links via `unsubscribeUrl`.
+- Adds "List-Unsubscribe" header for compliance.
+
+---
+
+Summary:
+- Use `sendSignUpEmail` for welcome flow.
+- Use `sendConfirmEmail` with Supabase-generated confirmation link.
+- Use `sendResetPasswordEmail` with Supabase-generated recovery link.
+- Use `sendNewsletterEmail` with structured content each week.
+
+All helpers send via Resend, using React Email templates styled with AN World branding.

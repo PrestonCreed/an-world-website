@@ -1,10 +1,10 @@
 // lib/supabase/middleware.ts
-import { type NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function updateSession(request: NextRequest) {
-  // Clone request headers for NextResponse
-  let response = NextResponse.next({ request: { headers: request.headers } });
+  // Create a response we can mutate cookies on
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,7 +24,9 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Always call getUser() in middleware to refresh tokens safely (per docs)
-  await supabase.auth.getUser(); // refresh if needed
+  // Calling getUser() here ensures Supabase rotates / refreshes cookies as needed
+  await supabase.auth.getUser();
+
   return response;
 }
+

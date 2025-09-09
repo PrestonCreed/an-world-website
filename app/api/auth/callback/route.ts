@@ -7,14 +7,14 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const type = url.searchParams.get("type");        // <- Supabase sets this (e.g., "recovery", "signup", "magiclink")
+  const type = url.searchParams.get("type");      // e.g. "recovery", "signup", "magiclink"
   const redirectParam = url.searchParams.get("redirect");
-  // If no redirect was provided and this is a password recovery, force /reset-password
-  const fallbackRedirect =
-    type === "recovery" ? "/reset-password" : "/";
 
-  // Prepare a response we can mutate cookies on
-  let res = NextResponse.redirect(new URL(redirectParam || fallbackRedirect, url.origin));
+  // Default redirect
+  const fallbackRedirect = type === "recovery" ? "/reset-password" : "/";
+
+  // Prepare a response we can write cookies to
+  const res = NextResponse.redirect(new URL(redirectParam || fallbackRedirect, url.origin));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,17 +34,18 @@ export async function GET(req: NextRequest) {
     }
   );
 
-  if (!code) {
-    // If no code, just bounce to redirect or fallback
-    return res;
-  }
+  // Some flows might not include a code; if so just redirect
+  if (!code) return res;
 
-  // Exchange the one-time code from email link for a session cookie
+  // DOC STEP: Exchange the PKCE one-time code for a cookie session
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     return NextResponse.redirect(new URL("/signin?error=auth", url.origin));
   }
 
-  // Success: redirect to desired page (recovery -> /reset-password)
+  // If this was a password recovery link, we’ll land at /reset-password
   return res;
 }
+
+
+
