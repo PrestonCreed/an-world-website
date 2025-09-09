@@ -5,10 +5,9 @@ export const revalidate = 0;
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
-// If your POST needs these, keep them; otherwise you can remove
-import { prisma } from "@/lib/prisma";
+import type { PrismaClient } from "@prisma/client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPrisma } from "@/lib/prisma";
 
 // Acceptable payload shape
 const BodySchema = z.object({
@@ -54,6 +53,7 @@ export async function POST(req: Request) {
     const { user } = data;
 
     // Persist (adjust model/table names if different)
+    const prisma: PrismaClient = getPrisma();
     await prisma.user.upsert({
       where: { id: user.id },
       update: { email: user.email ?? undefined },
@@ -72,3 +72,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "server_error" }, { status: 200 });
   }
 }
+

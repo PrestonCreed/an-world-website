@@ -1,13 +1,16 @@
 // app/api/tests/db/route.ts
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+import { NextResponse } from "next/server";
+import type { PrismaClient } from "@prisma/client";
+import { getPrisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
+    const prisma: PrismaClient = getPrisma();
     const meta = (await prisma.$queryRawUnsafe(
-        `SELECT current_database() AS db, NOW() AS now, version() AS version`
+      `SELECT current_database() AS db, NOW() AS now, version() AS version`
     )) as Array<{ db: string; now: Date; version: string }>;
 
     const row = meta?.[0] ?? null;
@@ -32,3 +35,4 @@ export async function GET() {
     );
   }
 }
+
